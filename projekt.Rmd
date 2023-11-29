@@ -1,0 +1,12 @@
+---
+title: "Projekt"
+author: "Mateusz Kozłowicz"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{}
+x <- 2
+x
+```
+
