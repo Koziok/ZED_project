@@ -2,8 +2,20 @@
 title: "Projekt"
 author: "Mateusz Kozłowicz"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    theme: paper
 ---
+# Podsumowanie analizy
+
+# Opis zbioru danych
+
+# Analiza
+
+# Predykcja
 
 ```{}
 x <- 2
