@@ -1,5 +1,5 @@
 ---
-title: "Projekt"
+title: "Analiza zbioru danych Rebrickable"
 author: "Mateusz Kozłowicz"
 date: "`r Sys.Date()`"
 output: 
@@ -7,18 +7,510 @@ output:
     toc: yes
     toc_float: yes
     number_sections: yes
-    theme: paper
 ---
 # Podsumowanie analizy
 
-# Opis zbioru danych
+
+# Wstęp
+## Ładowanie bibliotek
+
+```{r setup, message=FALSE, warning=FALSE, error=FALSE}
+library(knitr)
+library(tidyverse)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(R.utils)
+library(imager)
+library(scales)
+library(stringr)
+```
+
+## Ładowanie danych
+```{r read_datasets, cache=TRUE, warning=FALSE}
+colors_df <- fread("rebrickable/colors.csv.gz")
+elements_df <- fread("rebrickable/elements.csv.gz")
+inventories_df <- fread("rebrickable/inventories.csv.gz")
+inventory_minifigs_df <- fread("rebrickable/inventory_minifigs.csv.gz")
+inventory_parts_df <- fread("rebrickable/inventory_parts.csv.gz")
+inventory_sets_df <- fread("rebrickable/inventory_sets.csv.gz")
+minifigs_df <- fread("rebrickable/minifigs.csv.gz")
+part_categories_df <- fread("rebrickable/part_categories.csv.gz")
+part_relationships_df <- fread("rebrickable/part_relationships.csv.gz")
+parts_df <- fread("rebrickable/parts.csv.gz")
+sets_df <- fread("rebrickable/sets.csv.gz")
+themes_df <- fread("rebrickable/themes.csv.gz")
+```
+
+## Podsumowanie zbioru danych
+Zbiór danych Rebrickable składa się z 12 tabel, które przedstawione są na schemacie poniżej. Schemat został pobrany ze strony Rebrickable i brakuje w nim części atrybów w tabelach. Dokładny opis, podstawowe statystyki oraz próbki danych z poszczególnych tabel znajdują się poniżej.
+
+```{r rebrickable_schema, echo=FALSE}
+schema <- load.image("rebrickable/rebrickable_schema_v3.png")
+plot(schema)
+```
+
+### Colors
+Tabela zawierająca oficjalne kolory klocków.
+
+* id - id koloru
+* name - nazwa koloru
+* rgb - kod rgb koloru
+* is_trans - czy kolor jest transparentny
+
+```{r colors_summary, echo=FALSE}
+kable(summary(colors_df))
+kable(head(colors_df))
+```
+
+### Elements
+Tabela zawierająca pojedyncze klocki Lego.
+
+* element_id - id elementu
+* part_num - numer części
+* color_id - id koloru
+* design_id - id modelu
+
+```{r elements_summary, echo=FALSE}
+kable(summary(elements_df))
+kable(head(elements_df))
+```
+
+### Inventories
+Tabela nadrzędna wiążąca części i figurki z zestawami Lego.
+
+* id - id zapasu
+* version - wersja zapasu
+* set_num - numer zestawu
+
+```{r inventories_summary, echo=FALSE}
+kable(summary(inventories_df))
+kable(head(inventories_df))
+```
+
+### Inventory minifigs
+Tabela zawierająca zapasy figurek Lego.
+
+* inventory_id - id zapasu
+* fig_num - numer figurki
+* quantity - liczba figurek
+
+```{r inventory_minifigs_summary, echo=FALSE}
+kable(summary(inventory_minifigs_df))
+kable(head(inventory_minifigs_df))
+```
+
+### Inventory parts
+Tabela zawierająca zapasy części Lego.
+
+* inventory_id - id zapasu
+* part_num - numer części
+* color_id - id koloru
+* quantity - liczba częsci
+* is_spare - czy część jest zapasowa
+* img_url - adres url obrazka
+
+```{r inventory_parts_summary, echo=FALSE}
+kable(summary(inventory_parts_df))
+kable(head(inventory_parts_df))
+```
+
+### Inventory sets
+Tabela zawierająca zapasy zestawów Lego.
+
+* inventory_id - id zapasu
+* set_num - numer zestawu
+* quantity - liczba zestawów
+
+```{r inventory_sets_summary, echo=FALSE}
+kable(summary(inventory_sets_df))
+kable(head(inventory_sets_df))
+```
+
+### Minifigs
+Tabela zawierająca figurki Lego.
+
+* fig_num - numer figurki
+* name - nazwa figurki
+* num_parts - numer części
+* img_url - adres url obrazka
+
+```{r minifigs_summary, echo=FALSE}
+kable(summary(minifigs_df))
+kable(head(minifigs_df))
+```
+
+### Part categories
+Tabela zawierająca kategorie części Lego.
+
+* id - id kategorii
+* name - nazwa kategorii
+
+```{r part_categories_summary, echo=FALSE}
+kable(summary(part_categories_df))
+kable(head(part_categories_df))
+```
+
+### Part relationships
+Tabela zawierająca relacvje między częściami.
+
+* rel_type - typ relacji
+* child_part_num - numer części potomka
+* parent_part-num - numer częsci rodzica
+
+```{r part_relationships_summary, echo=FALSE}
+kable(summary(part_relationships_df))
+kable(head(part_relationships_df))
+```
+
+### Parts
+Tabela zawierająca części Lego.
+
+* part_num - numer części
+* name - nazwa częsci
+* part_cat_id - id kategorii
+* part_material - materiał, z którego wykonano część
+
+```{r parts_summary, echo=FALSE}
+kable(summary(parts_df))
+kable(head(parts_df))
+```
+
+### Sets
+Tabela zawierająca zestawy dostępne w sklepach.
+
+* set_num - numer zestawu
+* name - nazwa zestawu
+* year - rok wydania zestawu
+* theme_id - id motywu
+* num_parts - liczba części w zestawie
+* img_url - adres url obrazka
+
+```{r sets_summary, echo=FALSE}
+kable(summary(sets_df))
+kable(head(sets_df))
+```
+
+### Themes
+Tabela zawierająca oryginalne kategorie zestawów jak i współprace.
+
+* id - id motywu
+* name - nazwa motywu
+* parent_id - id rodzica
+
+```{r themes_summary, echo=FALSE}
+kable(summary(themes_df))
+kable(head(themes_df))
+```
 
 # Analiza
+
+## Analizy ogólne
+
+### Najczęściej występujące kolory cześci
+```{r common_colors, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_colors_df <- colors_df %>%
+  inner_join(elements_df, by=c("id" = "color_id")) %>% 
+  inner_join(parts_df, by="part_num") %>%
+  select(rgb, name.x) %>%
+  group_by(rgb, name.x) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count)) %>%
+  mutate(rgb = paste("#", rgb, sep="")) %>%
+  head(15)
+
+ggplot(most_common_colors_df, aes(x = reorder(name.x, count), y=count, fill=rgb, color="black")) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="15 najczęściej występujących kolorów części", x="Kolor", y="Liczba części") + 
+  theme_grey()
+```
+
+### Stosunek części transparentnych do nietransparentnych
+```{r trans_colors, echo=FALSE, message=FALSE, warning=FALSE}
+trans_colors <- colors_df %>%
+  inner_join(elements_df, by=c("id" = "color_id")) %>% 
+  inner_join(parts_df, by="part_num") %>%
+  group_by(is_trans) %>%
+  summarise(count=n())
+
+ggplot(trans_colors, aes(x=is_trans, y=count, fill=factor(is_trans), color="black")) +
+  geom_bar(stat="identity", position="identity") + 
+  scale_color_identity() +
+  labs(title="Stosunek części transparentnych do nietransparentnych", x="Czy transparentna?", y="Liczba części") +
+  theme_grey() +
+  scale_y_continuous(labels = label_comma()) +
+  scale_x_discrete(labels = c("f" = "Nie", "t" = "Tak")) +
+  theme(legend.position = "none")
+```
+
+### Najczęściej występujące figurki w zestawach
+```{r common_minifigs, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_minigifs <- minifigs_df %>%
+  inner_join(inventory_minifigs_df, by="fig_num") %>%
+  inner_join(inventories_df, by=c("inventory_id" = "id")) %>%     
+  select(fig_num, name, img_url, set_num) %>%
+  group_by(fig_num, name, img_url) %>%
+  summarize(count = n()) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=100 width=100 >")) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+most_common_minigifs %>%
+  mutate(name=str_trunc(name, 25)) %>%
+  arrange(desc(count)) %>%
+  ggplot(aes(x = reorder(name, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących figurek w zestawach", x="Figurka", y="Liczba zestawów, w których występuje figurka") + 
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+
+kable(most_common_minigifs)
+```
+
+### Najczęściej występujące części w zestawach (z podziałem na kolory)
+```{r common_parts, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_parts <- parts_df %>%
+  inner_join(inventory_parts_df, by="part_num") %>%
+  inner_join(inventories_df, by=c("inventory_id" = "id")) %>% 
+  select(part_num, name, img_url, color_id, set_num) %>%
+  group_by(part_num, name, img_url, color_id) %>%
+  summarize(count = n()) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=100 width=100 >")) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+most_common_parts %>%
+  mutate(name=str_trunc(name, 20)) %>%
+  ggplot(aes(x = reorder(paste0(part_num, ": ", name, " (", color_id, ")"), count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących części w zestawach", x="Część", y="Liczba zestawów, w których występuje część") + 
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+
+kable(most_common_parts)
+```
+
+### Najczęściej występujące kategorie części
+```{r common_categories, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_categories <- part_categories_df %>%
+  inner_join(parts_df, by=c("id" = "part_cat_id")) %>%
+  select(id, name.x, part_num) %>%
+  group_by(id, name.x) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+ggplot(most_common_categories, aes(x = reorder(name.x, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących kateogrii części", x="Kategoria", y="Liczba części, które należą do kategorii") + 
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+```
+
+### Najczęściej występujące matreriały, z których wykonane są części
+```{r common_materials, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_materials <- parts_df %>%
+  inner_join(inventory_parts_df, by=("part_num")) %>%
+  select(name, color_id, part_material) %>%
+  group_by(part_material) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(5)
+
+ggplot(most_common_materials, aes(x = reorder(part_material, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="5 najczęściej występujących materiałów, z których wykonane są części", x="Materiał", y="Liczba części, które wykonane są z materiału") +
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+```
+
+### Największe zestawy 
+```{r biggest_sets, echo=FALSE, message=FALSE, warning=FALSE}
+biggest_sets <- sets_df %>%
+  select(name, img_url, num_parts) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=120 width=100 >")) %>%
+  arrange(desc(num_parts)) %>%
+  head(10)
+
+ggplot(biggest_sets, aes(x = reorder(name, num_parts), y=num_parts, color="black", fill=num_parts)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 największych zestawów", x="Zestaw", y="Liczba części w zestawie") +
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+
+kable(biggest_sets)
+```
+
+### Najczęściej występujące motywy zestawów
+```{r common_themes, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_themes <- themes_df %>%
+  rename(theme_name = name) %>%
+  inner_join(sets_df, by=c("id" = "theme_id")) %>%
+  select(theme_name) %>%
+  group_by(theme_name) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+ggplot(most_common_themes, aes(x = reorder(theme_name, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących motywów", x="Motyw", y="Liczba zestawów z motywem") +
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+```
+
+### Motywy z największą liczbą podmotywów
+```{r common_themes_parent, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_themes_parent <- themes_df %>%
+  rename(theme_name = name) %>%
+  inner_join(themes_df, by=c("id" = "parent_id")) %>%
+  select(theme_name) %>%
+  group_by(theme_name) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+ggplot(most_common_themes_parent, aes(x = reorder(theme_name, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 motywów z największą liczbą podmotywów", x="Motyw", y="Liczba podmotywów") +
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+```
+
+## Analizy zapasów Rebrickable
+
+### Najczęściej występujące kolory części w zapasach Rebrickable
+```{r common_colors_inv, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_colors_inv_df <- colors_df %>%
+  inner_join(inventory_parts_df, by=c("id" = "color_id")) %>% 
+  select(rgb, name) %>%
+  group_by(rgb, name) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count)) %>%
+  mutate(rgb = paste("#", rgb, sep="")) %>%
+  head(15)
+
+ggplot(most_common_colors_inv_df, aes(x = reorder(name, count), y=count, fill=rgb, color="black")) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_identity() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="15 najczęściej występujących kolorów części w zapasach", x="Kolor", y="Liczba części w zapasach") + 
+  theme_grey()
+```
+
+### Najczęściej występujące figurki w zapasach Rebrickable
+```{r common_minifigs_inv, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_minigifs_inv <- minifigs_df %>%
+  inner_join(inventory_minifigs_df, by="fig_num") %>%
+  select(fig_num, name, img_url, quantity) %>%
+  group_by(fig_num, name, img_url) %>%
+  summarize(count = sum(quantity)) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=100 width=100 >")) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+most_common_minigifs_inv %>%
+  mutate(name=str_trunc(name, 25)) %>%
+  arrange(desc(count)) %>%
+  ggplot(aes(x = reorder(name, count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących figurek w zapasach", x="Figurka", y="Liczba figurek w zapasach") + 
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+
+kable(most_common_minigifs_inv)
+```
+
+### Najczęściej występujące części w zapsach Rebrickable (z podziałem na kolory)
+
+```{r common_parts_inv, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_parts_inv <- parts_df %>%
+  inner_join(inventory_parts_df, by="part_num") %>%
+  select(part_num, name, img_url, color_id, quantity) %>%
+  group_by(part_num, name, img_url, color_id) %>%
+  summarize(count = sum(quantity)) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=100 width=100 >")) %>%
+  arrange(desc(count)) %>%
+  head(10)
+
+most_common_parts_inv %>%
+  mutate(name=str_trunc(name, 20)) %>%
+  ggplot(aes(x = reorder(paste0(part_num, ": ", name, " (", color_id, ")"), count), y=count, color="black", fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_color_identity() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="10 najczęściej występujących części w zapasach", x="Część", y="Liczba części w zapasach") + 
+  theme_grey() +
+  scale_fill_gradient(low = "#e5f5f9", high = "#2ca25f") +
+  theme(legend.position = "none")
+
+kable(most_common_parts_inv)
+```
+
+### Najczęściej występujący zestaw w zapasach Rebrickable
+
+Z uwagi na to, że wiele zestawów z pierwszej 10 znajduje się w zapasach w podobnej liczbie, pokazany został tylko ten najliczniejszy.
+
+```{r common_sets_inv, echo=FALSE, message=FALSE, warning=FALSE}
+most_common_sets_inv <- sets_df %>%
+  inner_join(inventory_sets_df, by="set_num") %>%
+  select(set_num, name, img_url, quantity) %>%
+  group_by(set_num, name, img_url) %>%
+  summarize(count = sum(quantity)) %>%
+  mutate(img_url = paste0("<","img src=",img_url," height=150 width=150 >")) %>%
+  arrange(desc(count)) %>%
+  head(1)
+
+kable(most_common_sets_inv)
+```
+
+## Korelacja
+
+## Trendy na przestrzeni lat
 
 # Predykcja
 
 ```{}
-x <- 2
-x
+
 ```
 
