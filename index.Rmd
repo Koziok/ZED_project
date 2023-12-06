@@ -25,6 +25,7 @@ library(R.utils)
 library(imager)
 library(scales)
 library(stringr)
+library(gganimate)
 ```
 
 ## Ładowanie danych
@@ -51,7 +52,7 @@ schema <- load.image("rebrickable/rebrickable_schema_v3.png")
 plot(schema)
 ```
 
-### Colors
+### Tabela colors
 Tabela zawierająca oficjalne kolory klocków.
 
 * id - id koloru
@@ -64,7 +65,7 @@ kable(summary(colors_df))
 kable(head(colors_df))
 ```
 
-### Elements
+### Tabela elements
 Tabela zawierająca pojedyncze klocki Lego.
 
 * element_id - id elementu
@@ -77,7 +78,7 @@ kable(summary(elements_df))
 kable(head(elements_df))
 ```
 
-### Inventories
+### Tabela inventories
 Tabela nadrzędna wiążąca części i figurki z zestawami Lego.
 
 * id - id zapasu
@@ -89,7 +90,7 @@ kable(summary(inventories_df))
 kable(head(inventories_df))
 ```
 
-### Inventory minifigs
+### Tabela inventory minifigs
 Tabela zawierająca zapasy figurek Lego.
 
 * inventory_id - id zapasu
@@ -101,7 +102,7 @@ kable(summary(inventory_minifigs_df))
 kable(head(inventory_minifigs_df))
 ```
 
-### Inventory parts
+### Tabela inventory parts
 Tabela zawierająca zapasy części Lego.
 
 * inventory_id - id zapasu
@@ -116,7 +117,7 @@ kable(summary(inventory_parts_df))
 kable(head(inventory_parts_df))
 ```
 
-### Inventory sets
+### Tabela inventory sets
 Tabela zawierająca zapasy zestawów Lego.
 
 * inventory_id - id zapasu
@@ -128,7 +129,7 @@ kable(summary(inventory_sets_df))
 kable(head(inventory_sets_df))
 ```
 
-### Minifigs
+### Tabela minifigs
 Tabela zawierająca figurki Lego.
 
 * fig_num - numer figurki
@@ -141,7 +142,7 @@ kable(summary(minifigs_df))
 kable(head(minifigs_df))
 ```
 
-### Part categories
+### Tabela part categories
 Tabela zawierająca kategorie części Lego.
 
 * id - id kategorii
@@ -152,7 +153,7 @@ kable(summary(part_categories_df))
 kable(head(part_categories_df))
 ```
 
-### Part relationships
+### Tabela part relationships
 Tabela zawierająca relacvje między częściami.
 
 * rel_type - typ relacji
@@ -164,7 +165,7 @@ kable(summary(part_relationships_df))
 kable(head(part_relationships_df))
 ```
 
-### Parts
+### Tabela parts
 Tabela zawierająca części Lego.
 
 * part_num - numer części
@@ -177,7 +178,7 @@ kable(summary(parts_df))
 kable(head(parts_df))
 ```
 
-### Sets
+### Tabela sets
 Tabela zawierająca zestawy dostępne w sklepach.
 
 * set_num - numer zestawu
@@ -192,7 +193,7 @@ kable(summary(sets_df))
 kable(head(sets_df))
 ```
 
-### Themes
+### Tabela themes
 Tabela zawierająca oryginalne kategorie zestawów jak i współprace.
 
 * id - id motywu
@@ -208,7 +209,7 @@ kable(head(themes_df))
 
 ## Analizy ogólne
 
-### Najczęściej występujące kolory cześci
+### Analiza kolorów
 ```{r common_colors, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_colors_df <- colors_df %>%
   inner_join(elements_df, by=c("id" = "color_id")) %>% 
@@ -230,7 +231,6 @@ ggplot(most_common_colors_df, aes(x = reorder(name.x, count), y=count, fill=rgb,
   theme_grey()
 ```
 
-### Stosunek części transparentnych do nietransparentnych
 ```{r trans_colors, echo=FALSE, message=FALSE, warning=FALSE}
 trans_colors <- colors_df %>%
   inner_join(elements_df, by=c("id" = "color_id")) %>% 
@@ -248,7 +248,7 @@ ggplot(trans_colors, aes(x=is_trans, y=count, fill=factor(is_trans), color="blac
   theme(legend.position = "none")
 ```
 
-### Najczęściej występujące figurki w zestawach
+### Analiza figurek
 ```{r common_minifigs, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_minigifs <- minifigs_df %>%
   inner_join(inventory_minifigs_df, by="fig_num") %>%
@@ -276,7 +276,7 @@ most_common_minigifs %>%
 kable(most_common_minigifs)
 ```
 
-### Najczęściej występujące części w zestawach (z podziałem na kolory)
+### Analiza części
 ```{r common_parts, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_parts <- parts_df %>%
   inner_join(inventory_parts_df, by="part_num") %>%
@@ -303,7 +303,6 @@ most_common_parts %>%
 kable(most_common_parts)
 ```
 
-### Najczęściej występujące kategorie części
 ```{r common_categories, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_categories <- part_categories_df %>%
   inner_join(parts_df, by=c("id" = "part_cat_id")) %>%
@@ -324,7 +323,6 @@ ggplot(most_common_categories, aes(x = reorder(name.x, count), y=count, color="b
   theme(legend.position = "none")
 ```
 
-### Najczęściej występujące matreriały, z których wykonane są części
 ```{r common_materials, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_materials <- parts_df %>%
   inner_join(inventory_parts_df, by=("part_num")) %>%
@@ -345,7 +343,7 @@ ggplot(most_common_materials, aes(x = reorder(part_material, count), y=count, co
   theme(legend.position = "none")
 ```
 
-### Największe zestawy 
+### Analiza zestawów
 ```{r biggest_sets, echo=FALSE, message=FALSE, warning=FALSE}
 biggest_sets <- sets_df %>%
   select(name, img_url, num_parts) %>%
@@ -366,7 +364,6 @@ ggplot(biggest_sets, aes(x = reorder(name, num_parts), y=num_parts, color="black
 kable(biggest_sets)
 ```
 
-### Najczęściej występujące motywy zestawów
 ```{r common_themes, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_themes <- themes_df %>%
   rename(theme_name = name) %>%
@@ -388,7 +385,6 @@ ggplot(most_common_themes, aes(x = reorder(theme_name, count), y=count, color="b
   theme(legend.position = "none")
 ```
 
-### Motywy z największą liczbą podmotywów
 ```{r common_themes_parent, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_themes_parent <- themes_df %>%
   rename(theme_name = name) %>%
@@ -412,7 +408,7 @@ ggplot(most_common_themes_parent, aes(x = reorder(theme_name, count), y=count, c
 
 ## Analizy zapasów Rebrickable
 
-### Najczęściej występujące kolory części w zapasach Rebrickable
+### Analiza kolorów
 ```{r common_colors_inv, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_colors_inv_df <- colors_df %>%
   inner_join(inventory_parts_df, by=c("id" = "color_id")) %>% 
@@ -433,7 +429,7 @@ ggplot(most_common_colors_inv_df, aes(x = reorder(name, count), y=count, fill=rg
   theme_grey()
 ```
 
-### Najczęściej występujące figurki w zapasach Rebrickable
+### Analiza figurek
 ```{r common_minifigs_inv, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_minigifs_inv <- minifigs_df %>%
   inner_join(inventory_minifigs_df, by="fig_num") %>%
@@ -460,7 +456,7 @@ most_common_minigifs_inv %>%
 kable(most_common_minigifs_inv)
 ```
 
-### Najczęściej występujące części w zapsach Rebrickable (z podziałem na kolory)
+### Analiza części
 
 ```{r common_parts_inv, echo=FALSE, message=FALSE, warning=FALSE}
 most_common_parts_inv <- parts_df %>%
@@ -487,7 +483,7 @@ most_common_parts_inv %>%
 kable(most_common_parts_inv)
 ```
 
-### Najczęściej występujący zestaw w zapasach Rebrickable
+### Analiza zestawów
 
 Z uwagi na to, że wiele zestawów z pierwszej 10 znajduje się w zapasach w podobnej liczbie, pokazany został tylko ten najliczniejszy.
 
@@ -504,9 +500,99 @@ most_common_sets_inv <- sets_df %>%
 kable(most_common_sets_inv)
 ```
 
+## Trendy na przestrzeni lat
+
+Rok ograniczony został do 2022, z uwagi na to, że 2023 się jeszcze nie zakończył.
+
+### Wydane zestawy
+```{r sets_years, echo=FALSE, message=FALSE, warning=FALSE}
+sets_years <- sets_df %>%
+  select(year, set_num) %>%
+  filter(year <= 2022) %>%
+  group_by(year) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+
+sets_years_plot <- ggplot(sets_years, aes(x = year, y=count)) +
+  geom_line(color="black") +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Liczba wydanych zestawów na przestrzeni lat", x="Rok", y="Liczba zestawów") + 
+  theme_grey()
+
+ggplotly(sets_years_plot)
+```
+
+### Średnia wielkość zestawu
+```{r sets_mean_years, echo=FALSE, message=FALSE, warning=FALSE}
+sets_mean_years <- sets_df %>%
+  select(year, num_parts) %>%
+  filter(year <= 2022) %>%
+  group_by(year) %>%
+  summarize(mean = mean(num_parts)) %>%
+  arrange(desc(mean))
+
+sets_mean_years_plot <- ggplot(sets_mean_years, aes(x = year, y=mean)) +
+  geom_line(color="black") +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Średnia liczba części w wydanych zestawach na przestrzeni lat", x="Rok", y="Średnia liczba części") + 
+  theme_grey()
+
+ggplotly(sets_mean_years_plot)
+```
+
+### Ranking sumy wydanych motywów zestawów
+Zbiór został uzupełniony o brakujace dane, tak żeby w każdym roku były wszystkie motywy.
+```{r sets_themes_years, echo=FALSE, message=FALSE, warning=FALSE}
+sets_themes_years <- sets_df %>%
+  rename(set_name = name) %>%
+  inner_join(themes_df, by=c("theme_id" = "id")) %>%
+  select(year, name, set_name) %>%
+  filter(year <= 2023) %>%
+  group_by(year, name) %>%
+  summarize(count = n())
+
+complete <- expand.grid(year=unique(sets_themes_years$year), name=unique(sets_themes_years$name))
+sets_themes_years <- merge(complete, sets_themes_years, all.x=TRUE)
+sets_themes_years$count[is.na(sets_themes_years$count)] <- 0
+
+sets_themes_years <- sets_themes_years %>%
+  group_by(name) %>%
+  arrange(year) %>%
+  mutate(sum = cumsum(lag(count, default = 0)) + count) %>%
+  group_by(year) %>%
+  arrange(year, desc(sum)) %>%
+  mutate(ranking = row_number()) %>%
+  filter(ranking <= 10)
+
+animation <- sets_themes_years %>%
+  ggplot() +
+  geom_col(aes(ranking, sum, fill = name)) +
+#  geom_text(aes(ranking, sum, label = sum), hjust=-0.1) +
+  geom_text(aes(ranking, y=0 , label = name), hjust=1.1) + 
+  geom_text(aes(x=10, y=max(sum) , label = as.factor(year)), vjust = 0.2, alpha = 0.5,  col = "gray", size = 20) +
+  coord_flip(clip = "off", expand = FALSE) + scale_x_reverse() +
+  theme_minimal() + theme(
+    panel.grid = element_blank(), 
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    plot.margin = margin(1, 4, 1, 3, "cm")
+  ) +
+  transition_states(year, state_length = 0, transition_length = 2) +
+  enter_fade() +
+  exit_fade() + 
+  ease_aes('quadratic-in-out') 
+
+animate(animation, width = 700, height = 432, fps = 25, duration = 35, rewind = FALSE)
+```
+
 ## Korelacja
 
-## Trendy na przestrzeni lat
 
 # Predykcja
 
