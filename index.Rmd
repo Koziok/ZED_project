@@ -26,6 +26,9 @@ library(imager)
 library(scales)
 library(stringr)
 library(gganimate)
+library(caret)
+library(ggcorrplot)
+library(forecast)
 ```
 
 ## Ładowanie danych
@@ -591,12 +594,74 @@ animation <- sets_themes_years %>%
 animate(animation, width = 700, height = 432, fps = 25, duration = 35, rewind = FALSE)
 ```
 
-## Korelacja
+## Korelacja {#correlation}
+```{r correlation, echo=FALSE, message=FALSE, warning=FALSE}
+data <- sets_df %>%
+  rename(set_name = name) %>%
+  inner_join(themes_df, by=c("theme_id" = "id")) %>%
+  rename(theme_name = name) %>%
+  select(set_num, set_name, year, num_parts, theme_name) %>%
+  group_by(year) %>%
+  summarize(
+    set_count = n(), 
+    max_parts = max(num_parts), 
+    mean_parts = mean(num_parts), 
+    unique_themes = n_distinct(theme_name)
+    ) %>%
+  filter(year >= 1953, year < 2023) %>%
+  arrange(year)
 
+correlation <- cor(data)
+ggcorrplot(correlation)
+kable(correlation)
 
-# Predykcja
+plot_data <- data %>%
+  gather(key = "category", value = "value", -year)
 
-```{}
-
+ggplot(plot_data, aes(x = year, y = value, color = category)) +
+  geom_line() +
+  geom_point() +
+  labs(x="Rok", y="Wartość") +
+  scale_y_continuous(labels = label_comma()) +
+  facet_grid(category~., scales="free_y") +
+  theme_grey()
 ```
 
+# Predykcja (forecast)
+Próba przewidzenia cech z sekcji [Korelacja](#correlation) w późniejszych latach.
+## Model Arima
+```{r prediction_arima, echo=FALSE, message=FALSE, warning=FALSE}
+data_ts <- ts(data[, 2:5], start=1953, frequency=1)
+arima_models <- vector("list", length = ncol(data_ts))
+
+for (i in seq_along(arima_models)) {
+  arima_models[[i]] <- auto.arima(data_ts[, i])
+}
+
+generate_forecasts <- function(model, h = 10) {
+  forecast(model, h = h)
+}
+
+forecasts <- lapply(arima_models, generate_forecasts)
+for (i in seq_along(forecasts)) {
+  cat("\nPrognoza dla", colnames(data_ts)[i], ":\n")
+  print(forecasts[[i]]) 
+  plot(forecasts[[i]])
+}
+```
+## Model ETS
+```{r prediction_ets, echo=FALSE, message=FALSE, warning=FALSE}
+ets_models <- lapply(data_ts, function(ts_column) {
+  ets(ts_column)
+})
+
+ets_forecasts <- lapply(ets_models, function(model) {
+  forecast(model, h = 10)
+})
+
+for (i in seq_along(ets_forecasts)) {
+  cat("\nPrognoza dla", colnames(data_ts)[i], ":\n")
+  print(ets_forecasts[[i]])
+  plot(ets_forecasts[[i]])
+}
+```
