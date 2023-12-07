@@ -628,8 +628,11 @@ ggplot(plot_data, aes(x = year, y = value, color = category)) +
 ```
 
 # Predykcja (forecast)
+
 Próba przewidzenia cech z sekcji [Korelacja](#correlation) w późniejszych latach.
+
 ## Model Arima
+
 ```{r prediction_arima, echo=FALSE, message=FALSE, warning=FALSE}
 data_ts <- ts(data[, 2:5], start=1953, frequency=1)
 arima_models <- vector("list", length = ncol(data_ts))
@@ -649,7 +652,9 @@ for (i in seq_along(forecasts)) {
   plot(forecasts[[i]])
 }
 ```
+
 ## Model ETS
+
 ```{r prediction_ets, echo=FALSE, message=FALSE, warning=FALSE}
 ets_models <- lapply(data_ts, function(ts_column) {
   ets(ts_column)
