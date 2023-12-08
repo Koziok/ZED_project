@@ -7,11 +7,24 @@ output:
     toc: yes
     toc_float: yes
     number_sections: yes
+    theme: paper
 ---
 # Podsumowanie analizy
 
+Raport zawiera analize zbioru danych z bazy Rebrickable, która obejmuje informacje o klockach Lego. W sekcji [Wstęp](#intro) ładowane są wykorzystane biblioteki, zbiory danych oraz przedstawiona jest zawartośc każdej tabeli. Sekcja [Analiza](#analysis) podzielona jest na 4 podsekcje przedstawiające analizy ogólne, analizy zapasów Rebrickable, trendy na przestrzeni lat i korelacje pomiędzy wybranymi cechami zbioru. Ostatnia sekcja, [Predykcja](#prediction), zawiera próbę przewidzenia trendu wybranych cech dla przyszłych 10 lat.
 
-# Wstęp
+Spostrzeżenia:
+
+* najpopularnijeszymi kolorami klocków Lego są czarny i biały,
+* zdecydowana większość klocków jest nieprzeźroczysta,
+* najpopularniejsze figurki są często produkowane we współpracy z inną marką np. Star Wars,
+* najpopularniejszymi częściami są te uniwersalne, które można wykorzystać w wielu budowlach,
+* liczba wydanych zestawów oraz średnia liczba części w zestawie rosną z biegiem lat,
+* zestawy wydawane na początku rzadko stanowiły współpracę z inną marką, jednak współcześnie są większością,
+* rok jest bardzo silne skorelowany z cechami takimi jak: liczba wydanych zestawów, liczba części w największym zestawie, średnia liczba części, liczba unikalnych motywów,
+* prognozowany jest rosnący trend wartości cech z powyższego punktu.
+
+# Wstęp {#intro}
 ## Ładowanie bibliotek
 
 ```{r setup, message=FALSE, warning=FALSE, error=FALSE}
@@ -32,6 +45,9 @@ library(forecast)
 ```
 
 ## Ładowanie danych
+
+Zbiór danych zastał pobrany 29.11.2023 r. z oficjalnej strony Rebrickable.
+
 ```{r read_datasets, cache=TRUE, warning=FALSE}
 colors_df <- fread("rebrickable/colors.csv.gz")
 elements_df <- fread("rebrickable/elements.csv.gz")
@@ -208,7 +224,7 @@ kable(summary(themes_df))
 kable(head(themes_df))
 ```
 
-# Analiza
+# Analiza {#analysis}
 
 ## Analizy ogólne
 
@@ -505,7 +521,7 @@ kable(most_common_sets_inv)
 
 ## Trendy na przestrzeni lat
 
-Rok ograniczony został do 2022, z uwagi na to, że 2023 się jeszcze nie zakończył.
+Rok ograniczony został do 2022, z uwagi na to, że 2023 się jeszcze nie zakończył, co może zakłamać istniejące trendy.
 
 ### Wydane zestawy
 ```{r sets_years, echo=FALSE, message=FALSE, warning=FALSE}
@@ -595,6 +611,17 @@ animate(animation, width = 700, height = 432, fps = 25, duration = 35, rewind = 
 ```
 
 ## Korelacja {#correlation}
+
+Korelacja została wyliczona dla konkretnych cech zbioru, których przyszły trend został sprognozowany w sekcji [Predykcja](#prediction).
+
+Wybrane cechy:
+
+* year - rok
+* set_count - liczba wydanych zestawów
+* max_parts - liczba części w największym zestawie
+* mean_parts - średnia liczba części
+* unique_themes - liczba unikalnych motywów
+
 ```{r correlation, echo=FALSE, message=FALSE, warning=FALSE}
 data <- sets_df %>%
   rename(set_name = name) %>%
@@ -618,18 +645,21 @@ kable(correlation)
 plot_data <- data %>%
   gather(key = "category", value = "value", -year)
 
-ggplot(plot_data, aes(x = year, y = value, color = category)) +
+corr_plot <- ggplot(plot_data, aes(x = year, y = value, color = category)) +
   geom_line() +
   geom_point() +
+  geom_smooth() +
   labs(x="Rok", y="Wartość") +
   scale_y_continuous(labels = label_comma()) +
   facet_grid(category~., scales="free_y") +
   theme_grey()
+
+ggplotly(corr_plot)
 ```
 
-# Predykcja (forecast)
+# Predykcja (forecast) {#prediction}
 
-Próba przewidzenia cech z sekcji [Korelacja](#correlation) w późniejszych latach.
+Próba przewidzenia cech z sekcji [Korelacja](#correlation) w późniejszych latach. W predyckji wykorzystano 2 modele: Arima i ETS. 
 
 ## Model Arima
 
@@ -649,7 +679,11 @@ forecasts <- lapply(arima_models, generate_forecasts)
 for (i in seq_along(forecasts)) {
   cat("\nPrognoza dla", colnames(data_ts)[i], ":\n")
   print(forecasts[[i]]) 
-  plot(forecasts[[i]])
+  plot(
+    forecasts[[i]], 
+    main=paste0("Prognoza dla cechy ", colnames(data_ts)[i]),
+    xlab="Rok",
+    ylab="Wartość")
 }
 ```
 
@@ -667,6 +701,9 @@ ets_forecasts <- lapply(ets_models, function(model) {
 for (i in seq_along(ets_forecasts)) {
   cat("\nPrognoza dla", colnames(data_ts)[i], ":\n")
   print(ets_forecasts[[i]])
-  plot(ets_forecasts[[i]])
+  plot(ets_forecasts[[i]],
+    main=paste0("Prognoza dla cechy ", colnames(data_ts)[i]),
+    xlab="Rok",
+    ylab="Wartość")
 }
 ```
