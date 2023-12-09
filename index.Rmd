@@ -11,11 +11,11 @@ output:
 ---
 # Podsumowanie analizy
 
-Raport zawiera analize zbioru danych z bazy Rebrickable, która obejmuje informacje o klockach Lego. W sekcji [Wstęp](#intro) ładowane są wykorzystane biblioteki, zbiory danych oraz przedstawiona jest zawartośc każdej tabeli. Sekcja [Analiza](#analysis) podzielona jest na 4 podsekcje przedstawiające analizy ogólne, analizy zapasów Rebrickable, trendy na przestrzeni lat i korelacje pomiędzy wybranymi cechami zbioru. Ostatnia sekcja, [Predykcja](#prediction), zawiera próbę przewidzenia trendu wybranych cech dla przyszłych 10 lat.
+Raport zawiera analize zbioru danych z bazy Rebrickable, która obejmuje informacje o klockach Lego. W sekcji [Wstęp](#intro) ładowane są wykorzystane biblioteki, zbiory danych oraz przedstawiona jest zawartość każdej tabeli. Sekcja [Analiza](#analysis) podzielona jest na 4 podsekcje przedstawiające analizy ogólne, analizy zapasów Rebrickable, trendy na przestrzeni lat i korelacje pomiędzy wybranymi cechami zbioru. Ostatnia sekcja, [Predykcja](#prediction), zawiera próbę przewidzenia trendu wybranych cech dla przyszłych 10 lat.
 
 Spostrzeżenia:
 
-* najpopularnijeszymi kolorami klocków Lego są czarny i biały,
+* najpopularniejszymi kolorami klocków Lego są czarny i biały,
 * zdecydowana większość klocków jest nieprzeźroczysta,
 * najpopularniejsze figurki są często produkowane we współpracy z inną marką np. Star Wars,
 * najpopularniejszymi częściami są te uniwersalne, które można wykorzystać w wielu budowlach,
@@ -39,7 +39,6 @@ library(imager)
 library(scales)
 library(stringr)
 library(gganimate)
-library(caret)
 library(ggcorrplot)
 library(forecast)
 ```
@@ -619,7 +618,7 @@ Wybrane cechy:
 * year - rok
 * set_count - liczba wydanych zestawów
 * max_parts - liczba części w największym zestawie
-* mean_parts - średnia liczba części
+* mean_parts - średnia liczba części w zestawie
 * unique_themes - liczba unikalnych motywów
 
 ```{r correlation, echo=FALSE, message=FALSE, warning=FALSE}
